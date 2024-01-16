@@ -87,7 +87,13 @@ def session_test(request, code):
 ###################### mypage ######################
 @login_required
 def mypage(request):
-    chatlog_list = ChatLog.objects.filter(user=request.user)
-    post_list = Post.objects.filter(writer=request.user).order_by("-create_date")
-    return render(request, 'registration/mypage.html', {'chatlog_list':chatlog_list, 'post_list':post_list})
-
+    user = request.user
+    chatlog_list = ChatLog.objects.filter(user=user).select_related('user').prefetch_related('chatmessage_set')[:10]
+    post_list = Post.objects.filter(writer=user).select_related('writer').only('title', 'create_date')[:5]
+    
+    context = {
+        'chatlog_list': chatlog_list,
+        'post_list': post_list,
+        'total_chats': ChatLog.objects.filter(user=user).count()
+    }
+    return render(request, 'registration/mypage.html', context)
