@@ -12,7 +12,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
-import json
+# import json
+# env 파일을 사용하기 위한 라이브러리
+from dotenv import load_dotenv
+
+load_dotenv()  # .env 파일 로드
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +26,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-t#3+h5pt6(hxxy6!no%9jdqevqaadnio-c0oux_s87**)!7a*4"
-
+SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS]
+
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
 
 
 # Application definition
@@ -110,20 +120,21 @@ import json
 
 # secret key 값 가져오기
 
-with open("secrets.json", "r") as f:
-  secrets = json.load(f)
+# with open("secrets.json", "r") as f:
+#   secrets = json.load(f)
 
-CHATGPT_API_KEY = secrets["CHATGPT_API_KEY"]
-ETRI_API_KEY = secrets["ETRI_API_KEY"]
+CHATGPT_API_KEY = os.getenv('CHATGPT_API_KEY')
+ETRI_API_KEY = os.getenv('ETRI_API_KEY')
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = 'kt-aivle-584f12b40238.json'
-
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = 'kt-aivle-584f12b40238.json'
+GOOGLE_CREDENTIALS = os.path.join(BASE_DIR, os.getenv('GOOGLE_CREDENTIALS'))
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_CREDENTIALS
 
 # Email 전송
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = '587'
-EMAIL_HOST_USER = secrets["HOST_EMAIL"]
-EMAIL_HOST_PASSWORD = secrets["EMAIL_PASSWORD"]
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
@@ -136,12 +147,13 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'NAME': 'TKL',
-        'USER': 'root',
-        'PASSWORD': secrets["DB_PASSWORD"],
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': os.getenv('AWS_RDS_HOST'),
+        'PORT': os.getenv('AWS_RDS_PORT', '3306'),
+        'NAME': os.getenv('AWS_RDS_DB_NAME'),
+        'USER': os.getenv('AWS_RDS_USER'),
+        'PASSWORD': os.getenv('AWS_RDS_PASSWORD'),
+        'OPTIONS': {'charset': 'utf8mb4'},
     }
 }
 
@@ -186,8 +198,21 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-MEDIA_URL = '/media/'
+# MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# 미디어 파일 설정
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+
+# 파일 관리
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'ap-northeast-2')
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+AWS_DEFAULT_ACL = 'public-read'
+AWS_QUERYSTRING_AUTH = False
 
 
 # Default primary key field type
@@ -220,3 +245,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LOGIN_REDIRECT_URL = '/'
+
+GPT_SYSTEM_PROMPT = """
+당신은 다정하고 친절한 한국어 교사입니다. 
+간결하게 2문장 이내로 응답하고, 항상 한국어를 사용하세요.
+대화 주제를 자연스럽게 이꾸며 학습자를 격려해주세요.
+"""
