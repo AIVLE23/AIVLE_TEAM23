@@ -15,3 +15,5 @@ kt-aivle-584f12b40238.json
 *.mp3
 *.wav
 *.webm
+tasty_korean_language/.env
+tasty_korean_language/aichat/views copy.py
