@@ -14,6 +14,8 @@ class Post(models.Model):
 
     def get_absolute_url(self):
         return reverse('community:detail', args=[self.id])
+    
+    
 
 class Reply(models.Model):
     """
