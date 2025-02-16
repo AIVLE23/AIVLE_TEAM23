@@ -23,3 +23,6 @@ tasty_korean_language/
 ├── manage.py
 └── README.md
 ```
+
+## ERD
+![화면 캡처 2025-02-17 032329](https://github.com/user-attachments/assets/81b80f8a-a3d7-46cf-9128-0758f208fc7c)
